@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <div class="auth-brand">◈ RideShareNG</div>
+            <h2 class="auth-left-title">Welcome<br>back.</h2>
+            <p class="auth-left-sub">Pick up from where you left off. Your next journey across Nigeria is one login away.</p>
+            <div class="auth-left-route">
+                <span class="city-pill">Lagos</span>
+                <span class="route-dots">· · ·</span>
+                <span class="city-pill">Abuja</span>
+                <span class="route-dots">· · ·</span>
+                <span class="city-pill">Kano</span>
+            </div>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-card">
+            <h2 class="auth-title">Sign In</h2>
+            <p class="auth-subtitle">Enter your credentials to continue</p>
+            <div class="form-group-v2">
+                <label class="form-label-v2">Email Address</label>
+                <div class="input-wrap">
+                    <span class="input-icon">✉</span>
+                    <input type="email" id="email" placeholder="you@example.com" class="form-input-v2">
+                </div>
+            </div>
+            <div class="form-group-v2">
+                <label class="form-label-v2">Password</label>
+                <div class="input-wrap">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="password" placeholder="Enter your password" class="form-input-v2">
+                </div>
+            </div>
+            <button class="btn-auth" id="loginBtn" onclick="handleLogin()">
+                <span class="btn-text">Sign In</span>
+                <span class="btn-loader" style="display:none;">⟳</span>
+            </button>
+            <p class="auth-switch">Don't have an account? <a href="{{ url_for('register') }}">Create one →</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+async function handleLogin() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    if (!email || !password) {
+        const card = document.querySelector('.auth-card');
+        card.style.animation = 'none';
+        setTimeout(() => { card.style.animation = 'shake 0.4s ease'; }, 10);
+        return;
+    }
+    const btn = document.getElementById('loginBtn');
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.btn-loader').style.display = 'inline';
+    btn.disabled = true;
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    const response = await fetch('/login', { method: 'POST', body: formData });
+    if (response.redirected) { window.location.href = response.url; }
+    else { const text = await response.text(); document.open(); document.write(text); document.close(); }
+}
+document.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+{% endblock %}

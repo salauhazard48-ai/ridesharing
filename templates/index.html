@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            Powered by Dijkstra's Algorithm
+        </div>
+        <h1 class="hero-title">
+            Smarter Interstate<br>
+            <span class="hero-title-accent">Travel Across Nigeria</span>
+        </h1>
+        <p class="hero-subtitle">Find the most optimal ride from Lagos to Abuja, Kano, Port Harcourt and more — powered by intelligent route matching.</p>
+        <div class="hero-buttons">
+            <a href="{{ url_for('register') }}" class="btn-hero-primary">
+                Get Started <span class="btn-arrow">→</span>
+            </a>
+            <a href="{{ url_for('login') }}" class="btn-hero-secondary">Login to Account</a>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-item">
+                <span class="stat-number">36+</span>
+                <span class="stat-label">Nigerian Cities</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-number">5-Stage</span>
+                <span class="stat-label">Matching Engine</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-number">Fair</span>
+                <span class="stat-label">Cost Splitting</span>
+            </div>
+        </div>
+    </div>
+    <div class="hero-visual">
+        <div class="route-map-card">
+            <div class="map-header">Optimal Route Found</div>
+            <div class="map-route">
+                <div class="map-city active">Lagos</div>
+                <div class="map-line"><span class="map-dot"></span><span class="map-dot"></span><span class="map-dot"></span></div>
+                <div class="map-city">Ibadan</div>
+                <div class="map-line"><span class="map-dot"></span><span class="map-dot"></span><span class="map-dot"></span></div>
+                <div class="map-city">Abuja</div>
+            </div>
+            <div class="map-info">
+                <span>760 km</span>
+                <span class="map-badge">Shortest Path</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="features-section">
+    <div class="section-label">Why RideShare NG</div>
+    <div class="features-grid">
+        <div class="feature-card-v2">
+            <div class="feature-icon-wrap" style="background:#e8f4ff;">
+                <span class="feature-icon">⚡</span>
+            </div>
+            <h3>Smart Route Optimization</h3>
+            <p>Dijkstra's algorithm finds the shortest path between any two Nigerian cities instantly.</p>
+            <div class="feature-tag">Algorithm-Powered</div>
+        </div>
+        <div class="feature-card-v2 featured">
+            <div class="feature-icon-wrap" style="background:#fff3e8;">
+                <span class="feature-icon">🎯</span>
+            </div>
+            <h3>Intelligent Matching</h3>
+            <p>Our five-stage matching algorithm pairs passengers with the most suitable driver trips.</p>
+            <div class="feature-tag">5-Stage Engine</div>
+        </div>
+        <div class="feature-card-v2">
+            <div class="feature-icon-wrap" style="background:#e8fff0;">
+                <span class="feature-icon">💚</span>
+            </div>
+            <h3>Fair Cost Sharing</h3>
+            <p>Travel costs are divided proportionally and fairly among all passengers on a trip.</p>
+            <div class="feature-tag">Transparent Pricing</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

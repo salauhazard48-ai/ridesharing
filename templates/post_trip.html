@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Post a New Trip</h2>
+    <p>Fill in your trip details below. The fare per seat will be calculated automatically.</p>
+
+    <div class="form-group">
+        <label>Origin City</label>
+        <select name="origin" id="origin">
+            {% for city in cities %}
+                <option value="{{ city }}">{{ city }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Destination City</label>
+        <select name="destination" id="destination">
+            {% for city in cities %}
+                <option value="{{ city }}">{{ city }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Departure Time</label>
+        <input type="time" name="departure_time" id="departure_time">
+    </div>
+    <div class="form-group">
+        <label>Total Seats Available</label>
+        <input type="number" name="total_seats" id="total_seats" min="1" max="7" placeholder="e.g. 4">
+    </div>
+
+    <button class="btn btn-primary" onclick="handlePostTrip()">Post Trip</button>
+    <p class="form-footer"><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+</div>
+
+<script>
+async function handlePostTrip() {
+    const origin         = document.getElementById('origin').value;
+    const destination    = document.getElementById('destination').value;
+    const departure_time = document.getElementById('departure_time').value;
+    const total_seats    = document.getElementById('total_seats').value;
+
+    if (origin === destination) {
+        alert('Origin and destination cannot be the same city.');
+        return;
+    }
+    if (!departure_time) {
+        alert('Please select a departure time.');
+        return;
+    }
+    if (!total_seats) {
+        alert('Please enter the number of seats.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('origin', origin);
+    formData.append('destination', destination);
+    formData.append('departure_time', departure_time);
+    formData.append('total_seats', total_seats);
+
+    const response = await fetch('/post-trip', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (response.redirected) {
+        window.location.href = response.url;
+    } else {
+        const text = await response.text();
+        document.open();
+        document.write(text);
+        document.close();
+    }
+}
+</script>
+{% endblock %}

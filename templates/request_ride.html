@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+.request-wrapper{display:grid;grid-template-columns:420px 1fr;gap:2rem;max-width:1100px;margin:2.5rem auto;padding:0 1.5rem;align-items:start}
+.request-card{background:#fff;border-radius:20px;padding:2rem;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.request-card h2{font-size:22px;font-weight:700;margin-bottom:.4rem;color:#0f172a}
+.request-card p{font-size:13px;color:#64748b;margin-bottom:1.5rem}
+.form-group-v2{margin-bottom:1.1rem}
+.form-label-v2{font-size:12px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px}
+.input-wrap{position:relative}
+.input-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px}
+.form-input-v2,.form-select-v2{width:100%;padding:.6rem .75rem .6rem 2.4rem;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#0f172a;background:#fff;outline:none;transition:border .2s,box-shadow .2s}
+.form-input-v2:focus,.form-select-v2:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.btn-auth{width:100%;padding:.75rem;background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:.5rem;transition:opacity .2s,transform .2s}
+.btn-auth:hover{opacity:.9;transform:translateY(-1px)}
+.map-preview-card{background:#fff;border-radius:20px;padding:1.5rem;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.map-preview-card h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:.3rem}
+.map-preview-card p{font-size:13px;color:#64748b;margin-bottom:1rem}
+#preview-map{width:100%;height:380px;border-radius:14px;border:1.5px solid #e2e8f0}
+.preview-route{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:1rem;padding:.75rem 1rem;background:#f8fafc;border-radius:10px;font-size:13px}
+.preview-city{background:#1e3a8a;color:#fff;border-radius:6px;padding:3px 10px;font-weight:600}
+.preview-arrow{color:#94a3b8;font-weight:600}
+.preview-dist{margin-left:auto;font-weight:700;color:#1e3a8a;font-size:14px}
+.info-banner{background:#EBF3FA;border-radius:10px;padding:.75rem 1rem;font-size:13px;color:#1e3a8a;margin-bottom:1.25rem;border-left:3px solid #1e3a8a}
+@media(max-width:768px){.request-wrapper{grid-template-columns:1fr}}
+</style>
+
+<div class="request-wrapper">
+  <div class="request-card">
+    <h2>Post a Ride Request</h2>
+    <p>Tell drivers where you need to go. A driver who can fulfil your request will accept it and a booking will be created automatically.</p>
+
+    <div class="info-banner">
+      Once a driver accepts your request, the system will automatically compute the optimal route, calculate your fare, and confirm your booking — no further action needed from you.
+    </div>
+
+    <div class="form-group-v2">
+      <label class="form-label-v2">Origin City</label>
+      <div class="input-wrap">
+        <span class="input-icon">📍</span>
+        <select id="origin" class="form-select-v2" onchange="updateMap()">
+          {% for city in cities %}<option value="{{ city }}">{{ city }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group-v2">
+      <label class="form-label-v2">Destination City</label>
+      <div class="input-wrap">
+        <span class="input-icon">🏁</span>
+        <select id="destination" class="form-select-v2" onchange="updateMap()">
+          {% for city in cities %}<option value="{{ city }}">{{ city }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group-v2">
+      <label class="form-label-v2">Preferred Travel Date</label>
+      <div class="input-wrap">
+        <span class="input-icon">📅</span>
+        <input type="date" id="preferred_date" class="form-input-v2">
+      </div>
+    </div>
+
+    <div class="form-group-v2">
+      <label class="form-label-v2">Preferred Departure Time</label>
+      <div class="input-wrap">
+        <span class="input-icon">🕐</span>
+        <input type="time" id="preferred_time" class="form-input-v2">
+      </div>
+    </div>
+
+    <div class="form-group-v2">
+      <label class="form-label-v2">Seats Needed</label>
+      <div class="input-wrap">
+        <span class="input-icon">💺</span>
+        <input type="number" id="seats_needed" min="1" max="7" placeholder="e.g. 2" class="form-input-v2">
+      </div>
+    </div>
+
+    <div class="form-group-v2">
+      <label class="form-label-v2">Maximum Budget (₦)</label>
+      <div class="input-wrap">
+        <span class="input-icon">💰</span>
+        <input type="number" id="max_budget" placeholder="e.g. 15000" class="form-input-v2">
+      </div>
+    </div>
+
+    <button class="btn-auth" onclick="submitRequest()">
+      Post Ride Request
+    </button>
+  </div>
+
+  <div class="map-preview-card">
+    <h3>Route Preview</h3>
+    <p>The map updates as you select your cities showing the optimal route a driver would take.</p>
+    <div id="preview-map"></div>
+    <div class="preview-route">
+      <span class="preview-city" id="prev-origin">Lagos</span>
+      <span class="preview-arrow">→</span>
+      <span class="preview-city" id="prev-dest">Abuja</span>
+      <span class="preview-dist" id="prev-dist">760 km</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const CITIES_COORDS = {
+  'Lagos':         {lat:6.5244,  lng:3.3792},
+  'Ibadan':        {lat:7.3775,  lng:3.9470},
+  'Abuja':         {lat:9.0579,  lng:7.4951},
+  'Kano':          {lat:12.0022, lng:8.5920},
+  'Enugu':         {lat:6.4584,  lng:7.5464},
+  'Port Harcourt': {lat:4.8156,  lng:7.0498}
+};
+
+const GRAPH = {
+  'Lagos':         {'Abuja':760,'Ibadan':130,'Kano':1050,'Enugu':530,'Port Harcourt':660},
+  'Ibadan':        {'Lagos':130,'Abuja':640},
+  'Abuja':         {'Lagos':760,'Kano':310,'Ibadan':640},
+  'Kano':          {'Abuja':310,'Lagos':1050},
+  'Enugu':         {'Lagos':530},
+  'Port Harcourt': {'Lagos':660}
+};
+
+function dijkstra(src, dst) {
+  const dist = {}, prev = {};
+  Object.keys(CITIES_COORDS).forEach(c => dist[c] = Infinity);
+  dist[src] = 0;
+  const queue = Object.keys(CITIES_COORDS).slice();
+  const visited = new Set();
+  while (queue.length) {
+    queue.sort((a,b) => dist[a]-dist[b]);
+    const u = queue.shift();
+    if (visited.has(u)) continue;
+    visited.add(u);
+    if (u === dst) break;
+    for (const v in (GRAPH[u]||{})) {
+      const alt = dist[u] + GRAPH[u][v];
+      if (alt < dist[v]) { dist[v] = alt; prev[v] = u; }
+    }
+  }
+  if (dist[dst] === Infinity) return null;
+  const path = []; let cur = dst;
+  while (cur) { path.unshift(cur); cur = prev[cur]; }
+  return {path, dist: dist[dst]};
+}
+
+let previewMap = null, previewLayer = null;
+
+window.addEventListener('load', function() {
+  previewMap = L.map('preview-map').setView([8.5, 6.5], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {attribution:'© OpenStreetMap', maxZoom:18}).addTo(previewMap);
+  updateMap();
+});
+
+function updateMap() {
+  const origin = document.getElementById('origin').value;
+  const dest   = document.getElementById('destination').value;
+  if (!previewMap || origin === dest) return;
+  if (previewLayer) previewMap.removeLayer(previewLayer);
+  previewMap.eachLayer(l => { if (l instanceof L.Marker) previewMap.removeLayer(l); });
+  const result = dijkstra(origin, dest);
+  if (!result) return;
+  const latlngs = result.path.map(c => [CITIES_COORDS[c].lat, CITIES_COORDS[c].lng]);
+  previewLayer = L.polyline(latlngs, {color:'#1e3a8a', weight:5, opacity:.85}).addTo(previewMap);
+  result.path.forEach((c,i) => {
+    const col = i===0 ? '#22c55e' : i===result.path.length-1 ? '#ef4444' : '#3b82f6';
+    const lbl = i===0 ? 'S' : i===result.path.length-1 ? 'E' : '·';
+    const icon = L.divIcon({className:'',
+      html:`<div style="background:${col};color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">${lbl}</div>`,
+      iconSize:[28,28], iconAnchor:[14,14]});
+    L.marker([CITIES_COORDS[c].lat, CITIES_COORDS[c].lng], {icon})
+      .bindPopup(`<b>${c}</b>`).addTo(previewMap);
+  });
+  previewMap.fitBounds(previewLayer.getBounds(), {padding:[30,30]});
+  document.getElementById('prev-origin').textContent = origin;
+  document.getElementById('prev-dest').textContent   = dest;
+  document.getElementById('prev-dist').textContent   = result.dist.toLocaleString() + ' km';
+}
+
+async function submitRequest() {
+  const origin         = document.getElementById('origin').value;
+  const destination    = document.getElementById('destination').value;
+  const preferred_date = document.getElementById('preferred_date').value;
+  const preferred_time = document.getElementById('preferred_time').value;
+  const seats_needed   = document.getElementById('seats_needed').value;
+  const max_budget     = document.getElementById('max_budget').value;
+
+  if (origin === destination) { alert('Origin and destination cannot be the same.'); return; }
+  if (!preferred_date) { alert('Please select your preferred travel date.'); return; }
+  if (!preferred_time) { alert('Please enter your preferred departure time.'); return; }
+  if (!seats_needed)   { alert('Please enter the number of seats needed.'); return; }
+  if (!max_budget)     { alert('Please enter your maximum budget.'); return; }
+
+  const formData = new FormData();
+  formData.append('origin', origin);
+  formData.append('destination', destination);
+  formData.append('preferred_date', preferred_date);
+  formData.append('preferred_time', preferred_time);
+  formData.append('seats_needed', seats_needed);
+  formData.append('max_budget', max_budget);
+
+  const response = await fetch('/request-ride', {method:'POST', body:formData});
+  if (response.redirected) { window.location.href = response.url; }
+  else { const text = await response.text(); document.open(); document.write(text); document.close(); }
+}
+</script>
+{% endblock %}  

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <div class="auth-brand">◈ RideShareNG</div>
+            <h2 class="auth-left-title">Join the<br>journey.</h2>
+            <p class="auth-left-sub">Register as a driver or passenger and start sharing smarter, faster rides across Nigeria today.</p>
+            <div class="role-preview">
+                <div class="role-pill driver-pill">🚗 Driver — Post trips & earn</div>
+                <div class="role-pill passenger-pill">🧭 Passenger — Find optimal rides</div>
+            </div>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-card">
+            <h2 class="auth-title">Create Account</h2>
+            <p class="auth-subtitle">Fill in your details to get started</p>
+            <div class="form-group-v2">
+                <label class="form-label-v2">Full Name</label>
+                <div class="input-wrap">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="full_name" placeholder="e.g. Mubarak Adeyemi" class="form-input-v2">
+                </div>
+            </div>
+            <div class="form-group-v2">
+                <label class="form-label-v2">Email Address</label>
+                <div class="input-wrap">
+                    <span class="input-icon">✉</span>
+                    <input type="email" id="email" placeholder="you@example.com" class="form-input-v2">
+                </div>
+            </div>
+            <div class="form-group-v2">
+                <label class="form-label-v2">Password</label>
+                <div class="input-wrap">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="password" placeholder="Choose a strong password" class="form-input-v2">
+                </div>
+            </div>
+            <div class="form-group-v2">
+                <label class="form-label-v2">I am registering as</label>
+                <div class="role-toggle">
+                    <div class="role-option active" id="role-passenger" onclick="selectRole('passenger')">
+                        <span>🧭</span> Passenger
+                    </div>
+                    <div class="role-option" id="role-driver" onclick="selectRole('driver')">
+                        <span>🚗</span> Driver
+                    </div>
+                </div>
+                <input type="hidden" id="role" value="passenger">
+            </div>
+            <button class="btn-auth" id="registerBtn" onclick="handleRegister()">
+                <span class="btn-text">Create Account</span>
+                <span class="btn-loader" style="display:none;">⟳</span>
+            </button>
+            <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Sign in →</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectRole(role) {
+    document.getElementById('role').value = role;
+    document.getElementById('role-passenger').classList.toggle('active', role === 'passenger');
+    document.getElementById('role-driver').classList.toggle('active', role === 'driver');
+}
+async function handleRegister() {
+    const full_name = document.getElementById('full_name').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+    if (!full_name || !email || !password) {
+        const card = document.querySelector('.auth-card');
+        card.style.animation = 'none';
+        setTimeout(() => { card.style.animation = 'shake 0.4s ease'; }, 10);
+        return;
+    }
+    const btn = document.getElementById('registerBtn');
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.btn-loader').style.display = 'inline';
+    btn.disabled = true;
+    const formData = new FormData();
+    formData.append('full_name', full_name);
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('role', role);
+    const response = await fetch('/register', { method: 'POST', body: formData });
+    if (response.redirected) { window.location.href = response.url; }
+    else { const text = await response.text(); document.open(); document.write(text); document.close(); }
+}
+</script>
+{% endblock %}

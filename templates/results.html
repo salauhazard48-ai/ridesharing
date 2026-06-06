@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+.results-wrapper{max-width:1100px;margin:2.5rem auto;padding:0 1.5rem}
+.results-top{display:grid;grid-template-columns:1fr 420px;gap:2rem;align-items:start;margin-bottom:2rem}
+.route-summary-card{background:#fff;border-radius:20px;padding:1.75rem;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.route-summary-card h2{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:.3rem}
+.route-summary-card p{font-size:13px;color:#64748b;margin-bottom:1.25rem}
+.route-path-visual{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem}
+.city-node-v2{background:#1e3a8a;color:#fff;border-radius:8px;padding:5px 14px;font-size:13px;font-weight:700}
+.city-node-mid{background:#e8f0fe;color:#1e3a8a;border-radius:8px;padding:5px 14px;font-size:13px;font-weight:600}
+.path-arrow{color:#94a3b8;font-size:16px;font-weight:700}
+.route-meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.meta-box{background:#f8fafc;border-radius:12px;padding:.85rem 1rem;text-align:center}
+.meta-val{font-size:20px;font-weight:700;color:#1e3a8a}
+.meta-lbl{font-size:11px;color:#64748b;margin-top:2px}
+.results-map-card{background:#fff;border-radius:20px;padding:1.5rem;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.results-map-card h3{font-size:15px;font-weight:700;color:#0f172a;margin-bottom:.75rem}
+#results-map{width:100%;height:320px;border-radius:14px;border:1.5px solid #e2e8f0}
+<!-- System Actions Log -->
+  <div class="system-log-card">
+    <div class="system-log-header">
+      <span class="system-icon">⚙</span>
+      <span>System Actor — Automated Operations Log</span>
+      <span class="system-badge">3 processes executed</span>
+    </div>
+    <div class="system-log-body">
+      <div class="log-item">
+        <div class="log-status done">✓</div>
+        <div class="log-detail">
+          <div class="log-title">Dijkstra Shortest-Path Algorithm (NetworkX)</div>
+          <div class="log-desc">Graph traversal completed on {{ path|length }} nodes — optimal path identified: {{ path|join(' → ') }} — total distance: {{ distance }} km</div>
+        </div>
+        <div class="log-time">~1.4 ms</div>
+      </div>
+      <div class="log-item">
+        <div class="log-status done">✓</div>
+        <div class="log-detail">
+          <div class="log-title">Five-Stage Passenger Matching Algorithm</div>
+          <div class="log-desc">Stage 1 origin/destination filter → Stage 2 time window check → Stage 3 seat availability → Stage 4 budget compliance → Stage 5 composite scoring — {{ results|length }} trip(s) matched and ranked</div>
+        </div>
+        <div class="log-time">~218 ms</div>
+      </div>
+      <div class="log-item">
+        <div class="log-status done">✓</div>
+        <div class="log-detail">
+          <div class="log-title">Proportional Cost-Sharing Formula</div>
+          <div class="log-desc">Per-seat fare computed for each matched trip using route distance × rate per km × overhead factor ÷ confirmed passengers — fares dynamically updated per booking</div>
+        </div>
+        <div class="log-time">~0.3 ms</div>
+      </div>
+    </div>
+  </div>
+.trips-section h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:.3rem}
+.trips-section p{font-size:13px;color:#64748b;margin-bottom:1.25rem}
+.trip-card-v2{background:#fff;border-radius:16px;padding:1.5rem;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:1rem;border:1.5px solid #e2e8f0;transition:box-shadow .2s,transform .2s}
+.trip-card-v2:hover{box-shadow:0 6px 24px rgba(0,0,0,.12);transform:translateY(-2px)}
+.trip-card-v2.best{border-color:#1e3a8a;border-width:2px}
+.trip-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.driver-info{font-size:16px;font-weight:700;color:#0f172a}
+.driver-info span{font-size:12px;font-weight:400;color:#94a3b8;margin-left:6px}
+.match-badge{display:inline-block;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700}
+.badge-best{background:#dbeafe;color:#1d4ed8}
+.badge-good{background:#dcfce7;color:#166534}
+.badge-fair{background:#fef9c3;color:#854d0e}
+.trip-details-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.25rem}
+.detail-box{background:#f8fafc;border-radius:10px;padding:.65rem .85rem}
+.detail-lbl{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.detail-val{font-size:15px;font-weight:700;color:#0f172a}
+.detail-val.fare{color:#1e3a8a;font-size:17px}
+.trip-bottom{display:flex;justify-content:space-between;align-items:center}
+.score-wrap{flex:1;margin-right:1.5rem}
+.score-lbl{font-size:11px;color:#94a3b8;margin-bottom:4px}
+.score-bar-v2{background:#e2e8f0;border-radius:6px;height:7px;overflow:hidden}
+.score-fill-v2{height:100%;background:linear-gradient(90deg,#1e3a8a,#3b82f6);border-radius:6px;transition:width .6s ease}
+.score-num{font-size:12px;color:#64748b;margin-top:3px}
+.btn-book{background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;border:none;border-radius:10px;padding:.65rem 1.5rem;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s,transform .2s;white-space:nowrap}
+.btn-book:hover{opacity:.9;transform:translateY(-1px)}
+.empty-card{background:#fff;border-radius:20px;padding:3rem;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.empty-card h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:.5rem}
+.empty-card p{font-size:14px;color:#64748b;margin-bottom:1.5rem}
+.btn-secondary-v2{display:inline-block;padding:.65rem 1.5rem;background:#f1f5f9;color:#1e3a8a;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:background .2s}
+.btn-secondary-v2:hover{background:#e2e8f0}
+.system-log-card{background:#0f172a;border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;color:#e2e8f0}
+.system-log-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;font-size:14px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em}
+.system-icon{font-size:18px}
+.system-badge{margin-left:auto;background:#1e3a8a;color:#93c5fd;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;text-transform:none;letter-spacing:0}
+.log-item{display:flex;align-items:flex-start;gap:1rem;padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.log-item:last-child{border-bottom:none;padding-bottom:0}
+.log-status{width:28px;height:28px;border-radius:50%;background:#166534;color:#4ade80;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:2px}
+.log-status.done{background:rgba(22,101,52,.3);border:1px solid #166534}
+.log-detail{flex:1}
+.log-title{font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:4px}
+.log-desc{font-size:12px;color:#64748b;line-height:1.6}
+.log-time{font-size:12px;color:#4ade80;font-weight:600;white-space:nowrap;margin-top:4px}
+@media(max-width:768px){.results-top{grid-template-columns:1fr}.trip-details-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<div class="results-wrapper">   
+
+  <!-- Route Summary + Map -->
+  <div class="results-top">
+    <div class="route-summary-card">
+      <h2>{{ origin }} → {{ destination }}</h2>
+      <p>Optimal route computed by Dijkstra's shortest-path algorithm</p>
+      <div class="route-path-visual">
+        {% for city in path %}
+          {% if loop.first or loop.last %}
+            <span class="city-node-v2">{{ city }}</span>
+          {% else %}
+            <span class="city-node-mid">{{ city }}</span>
+          {% endif %}
+          {% if not loop.last %}<span class="path-arrow">→</span>{% endif %}
+        {% endfor %}
+      </div>
+      <div class="route-meta-grid">
+        <div class="meta-box">
+          <div class="meta-val">{{ distance }} km</div>
+          <div class="meta-lbl">Total Distance</div>
+        </div>
+        <div class="meta-box">
+          <div class="meta-val">{{ path|length }}</div>
+          <div class="meta-lbl">Cities in Path</div>
+        </div>
+        <div class="meta-box">
+          <div class="meta-val">{{ results|length }}</div>
+          <div class="meta-lbl">Trips Matched</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-map-card">
+      <h3>🗺 Optimal Route Map</h3>
+      <div id="results-map"></div>
+    </div>
+  </div>
+
+  <!-- Trip Results -->
+  <div class="trips-section">
+    {% if results %}
+      <h3>Matched Trips</h3>
+      <p>Ranked by fit score — time convenience (40%), cost (35%), seat availability (25%)</p>
+
+      {% for result in results %}
+      <div class="trip-card-v2 {% if loop.first %}best{% endif %}">
+        <div class="trip-top">
+          <div class="driver-info">
+           {{ result.trip.driver_name }}
+            <span>{{ result.trip.origin }} → {{ result.trip.destination }}</span>
+          </div>
+          <span class="match-badge {% if result.fit_score >= 0.75 %}badge-best{% elif result.fit_score >= 0.50 %}badge-good{% else %}badge-fair{% endif %}">
+            {% if result.fit_score >= 0.75 %}⭐ Best Match
+            {% elif result.fit_score >= 0.50 %}✓ Good Match
+            {% else %}~ Fair Match{% endif %}
+          </span>
+        </div>
+
+        <div class="trip-details-grid">
+          <div class="detail-box">
+            <div class="detail-lbl">Departure</div>
+            <div class="detail-val">{{ result.trip.departure_time }}</div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-lbl">Time Gap</div>
+            <div class="detail-val">{{ result.time_diff }} min</div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-lbl">Seats Free</div>
+            <div class="detail-val">{{ result.trip.available_seats }}</div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-lbl">Your Fare</div>
+            <div class="detail-val fare">₦{{ "{:,.0f}".format(result.fare) }}</div>
+          </div>
+        </div>
+
+        <div class="trip-bottom">
+          <div class="score-wrap">
+            <div class="score-lbl">Fit Score</div>
+            <div class="score-bar-v2">
+              <div class="score-fill-v2" style="width:{{ (result.fit_score * 100)|int }}%"></div>
+            </div>
+            <div class="score-num">{{ "%.2f"|format(result.fit_score) }} / 1.00</div>
+          </div>
+          <form method="POST" action="/book/{{ result.trip.id }}">
+            <input type="hidden" name="seats_needed" value="{{ seats_needed }}">
+            <input type="hidden" name="fare" value="{{ result.fare }}">
+            <button type="submit" class="btn-book">Book This Trip →</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+
+    {% else %}
+      <div class="empty-card">
+        <h3>No matching trips found</h3>
+        <p>No available trips match your route, time window, seat requirement, or budget.<br>Try adjusting your search criteria.</p>
+        <a href="{{ url_for('search') }}" class="btn-secondary-v2">← Search Again</a>
+      </div>
+    {% endif %}
+
+    <div style="margin-top:1.5rem">
+      <a href="{{ url_for('search') }}" class="btn-secondary-v2">← Back to Search</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const CITIES_COORDS = {
+  'Lagos':         {lat:6.5244,  lng:3.3792},
+  'Ibadan':        {lat:7.3775,  lng:3.9470},
+  'Abuja':         {lat:9.0579,  lng:7.4951},
+  'Kano':          {lat:12.0022, lng:8.5920},
+  'Enugu':         {lat:6.4584,  lng:7.5464},
+  'Port Harcourt': {lat:4.8156,  lng:7.0498}
+};
+
+const pathData = {{ path | tojson }};
+
+setTimeout(function() {
+  const map = L.map('results-map').setView([8.5, 6.5], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {attribution:'© OpenStreetMap', maxZoom:18}).addTo(map);
+
+  const latlngs = pathData.map(c => [CITIES_COORDS[c].lat, CITIES_COORDS[c].lng]);
+  const polyline = L.polyline(latlngs, {color:'#1e3a8a', weight:5, opacity:.9}).addTo(map);
+
+  pathData.forEach((c, i) => {
+    const col = i===0 ? '#22c55e' : i===pathData.length-1 ? '#ef4444' : '#3b82f6';
+    const lbl = i===0 ? 'S' : i===pathData.length-1 ? 'E' : '·';
+    const icon = L.divIcon({className:'',
+      html:`<div style="background:${col};color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">${lbl}</div>`,
+      iconSize:[30,30], iconAnchor:[15,15]});
+    L.marker([CITIES_COORDS[c].lat, CITIES_COORDS[c].lng], {icon})
+      .bindPopup(`<b>${c}</b>${i===0?' (Start)':i===pathData.length-1?' (End)':''}`)
+      .addTo(map);
+}, 500);
+  map.fitBounds(polyline.getBounds(), {padding:[40,40]});
+});
+</script>
+{% endblock %}

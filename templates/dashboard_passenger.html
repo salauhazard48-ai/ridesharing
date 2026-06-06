@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+.dash-wrapper{max-width:900px;margin:2.5rem auto;padding:0 1.5rem}
+.dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+.dash-header h2{font-size:24px;font-weight:700;color:#0f172a}
+.dash-header p{font-size:14px;color:#64748b;margin-top:3px}
+.btn-group{display:flex;gap:.75rem}
+.btn-primary-v2{display:inline-block;padding:.6rem 1.25rem;background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;border:none;cursor:pointer;transition:opacity .2s}
+.btn-primary-v2:hover{opacity:.88}
+.btn-secondary-v2{display:inline-block;padding:.6rem 1.25rem;background:#f1f5f9;color:#1e3a8a;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;border:none;cursor:pointer;transition:background .2s}
+.btn-secondary-v2:hover{background:#e2e8f0}
+.section-card{background:#fff;border-radius:20px;padding:1.5rem;box-shadow:0 4px 24px rgba(0,0,0,.08);margin-bottom:1.5rem}
+.section-card h3{font-size:17px;font-weight:700;color:#0f172a;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid #f1f5f9}
+.booking-item{display:flex;justify-content:space-between;align-items:center;padding:.85rem 0;border-bottom:1px solid #f8fafc}
+.booking-item:last-child{border-bottom:none;padding-bottom:0}
+.booking-route{font-size:15px;font-weight:600;color:#0f172a}
+.booking-meta{font-size:12px;color:#64748b;margin-top:3px}
+.booking-fare{font-size:16px;font-weight:700;color:#1e3a8a}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700}
+.status-confirmed{background:#dcfce7;color:#166534}
+.status-pending{background:#fef9c3;color:#854d0e}
+.status-cancelled{background:#fee2e2;color:#991b1b}
+.request-item{display:flex;justify-content:space-between;align-items:center;padding:.85rem 0;border-bottom:1px solid #f8fafc}
+.request-item:last-child{border-bottom:none;padding-bottom:0}
+.request-route{font-size:15px;font-weight:600;color:#0f172a}
+.request-meta{font-size:12px;color:#64748b;margin-top:3px}
+.empty-state{text-align:center;padding:2rem;color:#94a3b8;font-size:14px}
+.cancel-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s}
+.cancel-btn:hover{background:#fecaca}
+.status-open{background:#dbeafe;color:#1d4ed8}
+.status-accepted{background:#dcfce7;color:#166534}
+</style>
+
+<div class="dash-wrapper">
+  <div class="dash-header">
+    <div>
+      <h2>Welcome, {{ current_user.full_name }}</h2>
+      <p>Passenger Dashboard</p>
+    </div>
+    <div class="btn-group">
+      <a href="{{ url_for('request_ride') }}" class="btn-primary-v2">Post Ride Request</a>
+      <a href="{{ url_for('search') }}" class="btn-secondary-v2">Find a Ride</a>
+    </div>
+  </div>
+
+  <!-- Ride Requests -->
+  <div class="section-card">
+    <h3>My Ride Requests</h3>
+    {% if ride_requests %}
+      {% for req in ride_requests %}
+      <div class="request-item">
+        <div>
+          <div class="request-route">{{ req.origin }} → {{ req.destination }}</div>
+          <div class="request-meta">
+            {{ req.preferred_date }} at {{ req.preferred_time }}
+            &nbsp;|&nbsp; {{ req.seats_needed }} seat(s)
+            &nbsp;|&nbsp; Budget: ₦{{ "{:,.0f}".format(req.max_budget) }}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span class="status-badge
+            {% if req.status == 'open' %}status-open
+            {% elif req.status == 'accepted' %}status-accepted
+            {% else %}status-cancelled{% endif %}">
+            {{ req.status | capitalize }}
+          </span>
+          {% if req.status == 'open' %}
+          <form method="POST" action="/cancel-request/{{ req.id }}">
+            <button type="submit" class="cancel-btn">Cancel</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">No ride requests yet. Click "Post Ride Request" to get started.</div>
+    {% endif %}
+  </div>
+
+  <!-- Booking History -->
+  <div class="section-card">
+    <h3>Booking History</h3>
+    {% if bookings %}
+      {% for booking in bookings %}
+      <div class="booking-item">
+        <div>
+          <div class="booking-route">
+            {{ booking.trip.origin }} → {{ booking.trip.destination }}
+          </div>
+          <div class="booking-meta">
+            Departure: {{ booking.trip.departure_time }}
+            &nbsp;|&nbsp; Seats: {{ booking.seats_booked }}
+            &nbsp;|&nbsp; Booked: {{ booking.booked_at.strftime('%d %b %Y') }}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="booking-fare">₦{{ "{:,.0f}".format(booking.fare_paid) }}</div>
+          <span class="status-badge
+            {% if booking.status == 'confirmed' %}status-confirmed
+            {% elif booking.status == 'pending' %}status-pending
+            {% else %}status-cancelled{% endif %}">
+            {{ booking.status | capitalize }}
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">No bookings yet. Search for a ride or post a ride request.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

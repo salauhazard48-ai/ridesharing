@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideShare Nigeria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <a href="{{ url_for('index') }}" class="logo">
+            <span class="logo-icon">◈</span>
+            RideShare<span class="logo-accent">NG</span>
+        </a>
+        <div class="nav-links">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+                {% if current_user.role == 'driver' %}
+                    <a href="{{ url_for('post_trip') }}" class="nav-link">Post Trip</a>
+                {% else %}
+                    <a href="{{ url_for('search') }}" class="nav-link">Find a Ride</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="nav-link nav-logout">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+                <a href="{{ url_for('register') }}" class="nav-link nav-cta">Get Started</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert" id="flash-alert">
+                        <span class="alert-icon">✓</span>
+                        {{ message }}
+                        <button class="alert-close" onclick="this.parentElement.style.opacity='0';this.parentElement.style.transform='translateY(-10px)';setTimeout(()=>this.parentElement.remove(),300)">×</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 20) navbar.classList.add('scrolled');
+            else navbar.classList.remove('scrolled');
+        });
+        setTimeout(() => {
+            const alert = document.getElementById('flash-alert');
+            if (alert) {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-10px)';
+                setTimeout(() => alert.remove(), 300);
+            }
+        }, 4000);
+    </script>
+</body>
+</html>
